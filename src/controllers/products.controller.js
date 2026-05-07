@@ -69,7 +69,7 @@ exports.create = async (req, res) => {
 // GET /api/products — listado con filtros
 exports.list = async (req, res) => {
   try {
-    let { page = 1, limit = 20, search, categoryId, condition, minPrice, maxPrice } = req.query
+    let { page = 1, limit = 20, search, categoryId, condition, minPrice, maxPrice, sellerId } = req.query
     page = parseInt(page); limit = Math.min(parseInt(limit), 20)
     if (minPrice && maxPrice && Number(minPrice) > Number(maxPrice))
       return res.status(400).json({ error: 'minPrice no puede ser mayor que maxPrice' })
@@ -78,11 +78,12 @@ exports.list = async (req, res) => {
     const values = []
     let idx = 1
 
-    if (search) { conditions.push(`(p.title ILIKE $${idx} OR p.description ILIKE $${idx})`); values.push(`%${search}%`); idx++ }
+    if (search)     { conditions.push(`(p.title ILIKE $${idx} OR p.description ILIKE $${idx})`); values.push(`%${search}%`); idx++ }
     if (categoryId) { conditions.push(`p.category_id = $${idx++}`); values.push(categoryId) }
-    if (condition) { conditions.push(`p.condition = $${idx++}`); values.push(condition) }
-    if (minPrice) { conditions.push(`p.price >= $${idx++}`); values.push(minPrice) }
-    if (maxPrice) { conditions.push(`p.price <= $${idx++}`); values.push(maxPrice) }
+    if (condition)  { conditions.push(`p.condition = $${idx++}`); values.push(condition) }
+    if (minPrice)   { conditions.push(`p.price >= $${idx++}`); values.push(minPrice) }
+    if (maxPrice)   { conditions.push(`p.price <= $${idx++}`); values.push(maxPrice) }
+    if (sellerId)   { conditions.push(`p.seller_id = $${idx++}`); values.push(sellerId) }
 
     const where = 'WHERE ' + conditions.join(' AND ')
     const countRes = await pool.query(`SELECT COUNT(*) FROM products p ${where}`, values)

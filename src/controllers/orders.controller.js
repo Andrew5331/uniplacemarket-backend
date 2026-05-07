@@ -35,8 +35,8 @@ exports.create = async (req, res) => {
       if (dup.rows.length) continue
 
       const r = await client.query(
-        `INSERT INTO orders (product_id, buyer_id, seller_id, price) VALUES ($1,$2,$3,$4) RETURNING *`,
-        [item.product_id, buyerId, item.seller_id, item.price]
+        `INSERT INTO orders (product_id, buyer_id, seller_id) VALUES ($1,$2,$3) RETURNING *`,
+        [item.product_id, buyerId, item.seller_id]
       )
       created.push(r.rows[0])
     }
@@ -79,8 +79,8 @@ exports.createSingle = async (req, res) => {
       return res.status(400).json({ error: 'Ya tienes una solicitud activa para este producto' })
 
     const result = await pool.query(
-      `INSERT INTO orders (product_id, buyer_id, seller_id, price) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [productId, buyerId, prod.rows[0].seller_id, prod.rows[0].price]
+      `INSERT INTO orders (product_id, buyer_id, seller_id) VALUES ($1,$2,$3) RETURNING *`,
+      [productId, buyerId, prod.rows[0].seller_id]
     )
     return res.status(201).json(result.rows[0])
   } catch (err) {

@@ -1,43 +1,40 @@
 const pool = require('../config/db')
 
-// POST /api/reviews — reseña por orden entregada (según ticket US-14)
+// POST /api/reviews — reseña directa por producto (sin requerir orden)
 exports.create = async (req, res) => {
   try {
-    const { orderId, sellerId, rating, comment } = req.body
+    const { productId, rating, comment } = req.body
     const buyerId = req.user.userId
 
-    if (!orderId || !sellerId || !rating)
-      return res.status(400).json({ error: 'orderId, sellerId y rating son obligatorios' })
-    if (!Number.isInteger(Number(rating)) || rating < 1 || rating > 5)
+    if (!productId || !rating)
+      return res.status(400).json({ error: 'productId y rating son obligatorios' })
+    if (!Number.isInteger(Number(rating)) || Number(rating) < 1 || Number(rating) > 5)
       return res.status(400).json({ error: 'El rating debe ser un entero entre 1 y 5' })
     if (comment && comment.length > 500)
       return res.status(400).json({ error: 'El comentario no puede superar 500 caracteres' })
 
-    // Verificar orden existe y está entregada
-    const order = await pool.query(
-      'SELECT * FROM orders WHERE order_id = $1', [orderId]
+    // Verificar producto existe
+    const prod = await pool.query(
+      `SELECT product_id, seller_id FROM products WHERE product_id = $1 AND status != 'deleted'`,
+      [productId]
     )
-    if (!order.rows.length) return res.status(404).json({ error: 'Orden no encontrada' })
-    const ord = order.rows[0]
-    if (ord.buyer_id !== buyerId)
-      return res.status(403).json({ error: 'No eres el comprador de esta orden' })
-    if (ord.status !== 'delivered' && ord.status !== 'completed')
-      return res.status(400).json({ error: 'Solo puedes reseñar órdenes entregadas' })
+    if (!prod.rows.length) return res.status(404).json({ error: 'Producto no encontrado' })
+    const sellerId = prod.rows[0].seller_id
+    if (sellerId === buyerId)
+      return res.status(400).json({ error: 'No puedes reseñar tu propio producto' })
 
-    // Verificar no existe reseña previa para esta orden
+    // Una sola reseña por producto por usuario (unique index en migrate.sql)
     const exists = await pool.query(
-      'SELECT review_id FROM reviews WHERE order_id = $1', [orderId]
+      'SELECT review_id FROM reviews WHERE product_id = $1 AND buyer_id = $2',
+      [productId, buyerId]
     )
     if (exists.rows.length)
-      return res.status(409).json({ error: 'Ya dejaste una reseña para esta compra' })
-
-    // Obtener productId de la orden
-    const productId = ord.product_id
+      return res.status(409).json({ error: 'Ya dejaste una reseña para este producto' })
 
     const result = await pool.query(
-      `INSERT INTO reviews (order_id, product_id, buyer_id, seller_id, rating, comment)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [orderId, productId, buyerId, sellerId, Number(rating), comment || null]
+      `INSERT INTO reviews (product_id, buyer_id, seller_id, rating, comment)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [productId, buyerId, sellerId, Number(rating), comment || null]
     )
     const rev = result.rows[0]
     return res.status(201).json({
@@ -45,7 +42,7 @@ exports.create = async (req, res) => {
       rating: rev.rating, comment: rev.comment, createdAt: rev.created_at
     })
   } catch (err) {
-    console.error(err)
+    console.error('[reviews.create]', err)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }

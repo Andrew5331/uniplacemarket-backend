@@ -54,7 +54,7 @@ exports.getCart = async (req, res) => {
 exports.addItem = async (req, res) => {
   try {
     console.log('[cart.addItem] body:', req.body)
-    const { productId } = req.body
+    const productId = req.body.productId || req.body.product_id
     const userId = req.user.userId
     if (!productId) return res.status(400).json({ error: 'productId es obligatorio' })
 
