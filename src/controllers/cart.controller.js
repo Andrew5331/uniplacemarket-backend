@@ -19,7 +19,7 @@ exports.getCart = async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (err) {
-    console.error(err)
+    console.error('[cart.getCart]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -59,7 +59,7 @@ exports.addItem = async (req, res) => {
     )
     return res.status(201).json(result.rows[0])
   } catch (err) {
-    console.error(err)
+    console.error('[cart.addItem]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -80,7 +80,7 @@ exports.removeItem = async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Producto no encontrado en el carrito' })
     return res.status(200).json({ message: 'Producto eliminado del carrito' })
   } catch (err) {
-    console.error(err)
+    console.error('[cart.removeItem]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }

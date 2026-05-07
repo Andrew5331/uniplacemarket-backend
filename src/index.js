@@ -3,10 +3,15 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 const http = require('http')
+const fs = require('fs')
 const { Server } = require('socket.io')
 
 const app = express()
 const server = http.createServer(app)
+
+// Garantizar que el directorio uploads exista (Render usa filesystem efímero)
+const uploadsDir = path.join(__dirname, '../uploads')
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 
@@ -17,7 +22,7 @@ const io = new Server(server, {
 app.use(cors({ origin: FRONTEND_URL, credentials: true }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+app.use('/uploads', express.static(uploadsDir))
 
 app.set('io', io)
 
@@ -39,9 +44,15 @@ if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
     }).on('error', (err) => {
       console.error('🏓 Self-ping error:', err.message)
     })
-  }, 10 * 60 * 1000) // cada 10 minutos
+  }, 10 * 60 * 1000)
   console.log('✅ Self-ping activado — backend no se dormirá')
 }
+
+// Error handler global — captura errores de multer y otros middlewares
+app.use((err, req, res, next) => {
+  console.error('❌ Express error handler:', err.message, '\n', err.stack)
+  res.status(err.status || 500).json({ error: err.message || 'Error del servidor' })
+})
 
 const PORT = process.env.PORT || 4000
 server.listen(PORT, () => console.log(`🚀 Backend en http://localhost:${PORT}`))

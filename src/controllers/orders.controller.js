@@ -49,7 +49,7 @@ exports.create = async (req, res) => {
     return res.status(201).json(created)
   } catch (err) {
     await client.query('ROLLBACK')
-    console.error(err)
+    console.error('[orders.create]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   } finally {
     client.release()
@@ -83,7 +83,7 @@ exports.createSingle = async (req, res) => {
     )
     return res.status(201).json(result.rows[0])
   } catch (err) {
-    console.error(err)
+    console.error('[orders.createSingle]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -112,7 +112,7 @@ exports.myOrders = async (req, res) => {
     )
     return res.status(200).json(result.rows)
   } catch (err) {
-    console.error(err)
+    console.error('[orders.myOrders]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -135,7 +135,7 @@ exports.updateStatus = async (req, res) => {
     )
     return res.status(200).json(result.rows[0])
   } catch (err) {
-    console.error(err)
+    console.error('[orders.updateStatus]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -171,7 +171,7 @@ exports.changeStatus = async (req, res) => {
     )
     return res.status(200).json(result.rows[0])
   } catch (err) {
-    console.error(err)
+    console.error('[orders.changeStatus]', err.message, '\n', err.stack)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
