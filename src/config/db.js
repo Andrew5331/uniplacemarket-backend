@@ -27,4 +27,9 @@ pool.connect((err) => {
   else console.log('✅ Conectado a PostgreSQL')
 })
 
+// Evita que el proceso crashee cuando Neon cierra conexiones idle
+pool.on('error', (err) => {
+  console.error('PostgreSQL pool error:', err.message)
+})
+
 module.exports = pool

@@ -26,7 +26,11 @@ exports.getCart = async (req, res) => {
         title:      r.title,
         price:      parseFloat(r.price),
         quantity:   1,
-        imageUrl:   r.image_url ? `${process.env.RENDER_EXTERNAL_URL || 'http://localhost:4000'}${r.image_url}` : null,
+        imageUrl:   r.image_url
+          ? (r.image_url.startsWith('data:') || r.image_url.startsWith('http')
+              ? r.image_url
+              : `${process.env.RENDER_EXTERNAL_URL || 'http://localhost:4000'}${r.image_url}`)
+          : null,
         sellerName: r.seller_name,
         sellerId:   r.seller_id,
       }))

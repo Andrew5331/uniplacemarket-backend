@@ -35,10 +35,14 @@ exports.create = async (req, res) => {
     // Insertar imágenes si las hay
     const files = req.files || []
     if (files.length > 5) return res.status(400).json({ error: 'Máximo 5 imágenes por producto' })
+    const isProd = process.env.NODE_ENV === 'production'
     for (let i = 0; i < files.length; i++) {
+      const url = isProd
+        ? `data:${files[i].mimetype};base64,${files[i].buffer.toString('base64')}`
+        : `/uploads/${files[i].filename}`
       await pool.query(
         'INSERT INTO product_images (product_id, url, position) VALUES ($1,$2,$3)',
-        [product.product_id, `/uploads/${files[i].filename}`, i]
+        [product.product_id, url, i]
       )
     }
 
@@ -167,10 +171,14 @@ exports.update = async (req, res) => {
     // Reemplazar imágenes si vienen nuevas
     const files = req.files || []
     if (files.length > 0) {
+      const isProd = process.env.NODE_ENV === 'production'
       await pool.query('DELETE FROM product_images WHERE product_id = $1', [productId])
       for (let i = 0; i < files.length; i++) {
+        const url = isProd
+          ? `data:${files[i].mimetype};base64,${files[i].buffer.toString('base64')}`
+          : `/uploads/${files[i].filename}`
         await pool.query('INSERT INTO product_images (product_id, url, position) VALUES ($1,$2,$3)',
-          [productId, `/uploads/${files[i].filename}`, i])
+          [productId, url, i])
       }
     }
     return res.status(200).json({ productId, updated: true, updatedAt: new Date().toISOString() })

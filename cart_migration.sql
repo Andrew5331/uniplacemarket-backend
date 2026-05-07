@@ -20,3 +20,6 @@ CREATE TABLE cart_items (
 
 -- Snapshot del precio al momento de crear la orden
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS price NUMERIC(12,2);
+
+-- product_images.url debe ser TEXT para soportar data URLs en producción
+ALTER TABLE product_images ALTER COLUMN url TYPE TEXT;
