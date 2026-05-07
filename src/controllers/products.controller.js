@@ -1,5 +1,11 @@
 const pool = require('../config/db')
 
+const resolveImageUrl = (url) => {
+  if (!url) return null
+  if (url.startsWith('data:') || url.startsWith('http')) return url
+  return `${process.env.RENDER_EXTERNAL_URL || 'http://localhost:4000'}${url}`
+}
+
 // Middleware activateSellerRole — efecto secundario de POST /api/products
 async function activateSellerRole(userId) {
   await pool.query(
@@ -101,7 +107,7 @@ exports.list = async (req, res) => {
       data: result.rows.map(p => ({
         productId: p.product_id, title: p.title, description: p.description,
         price: parseFloat(p.price), condition: p.condition, category: p.category,
-        imageUrl: p.image_url ? `http://localhost:4000${p.image_url}` : null,
+        imageUrl: resolveImageUrl(p.image_url),
         sellerName: p.seller_name, sellerId: p.seller_id, createdAt: p.created_at
       })),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) }
@@ -134,7 +140,7 @@ exports.getOne = async (req, res) => {
       productId: p.product_id, title: p.title, description: p.description,
       price: parseFloat(p.price), condition: p.condition, status: p.status,
       category: p.category, createdAt: p.created_at,
-      images: imgs.rows.map(i => `http://localhost:4000${i.url}`),
+      images: imgs.rows.map(i => resolveImageUrl(i.url)),
       seller: { id: p.seller_id, name: p.seller_name, reputation: parseFloat(p.seller_rep), photoUrl: p.seller_photo }
     })
   } catch (err) {
@@ -223,7 +229,7 @@ exports.myProducts = async (req, res) => {
     return res.status(200).json(result.rows.map(p => ({
       productId: p.product_id, title: p.title, price: parseFloat(p.price),
       condition: p.condition, status: p.status, createdAt: p.created_at,
-      imageUrl: p.image_url ? `http://localhost:4000${p.image_url}` : null
+      imageUrl: resolveImageUrl(p.image_url)
     })))
   } catch (err) {
     console.error('[products.myProducts]', err)

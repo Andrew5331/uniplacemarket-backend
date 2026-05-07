@@ -4,6 +4,13 @@ const pool = require('../config/db')
 exports.getCart = async (req, res) => {
   try {
     const userId = req.user.userId
+
+    // Garantizar que el carrito exista antes de consultarlo
+    await pool.query(
+      'INSERT INTO carts (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING',
+      [userId]
+    )
+
     const result = await pool.query(
       `SELECT c.cart_id, ci.cart_item_id, ci.product_id, ci.created_at,
               p.title, p.price, p.status AS product_status,

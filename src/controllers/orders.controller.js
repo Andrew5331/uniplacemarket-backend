@@ -67,6 +67,7 @@ exports.createSingle = async (req, res) => {
       `SELECT * FROM products WHERE product_id = $1 AND status = 'active'`, [productId]
     )
     if (!prod.rows.length) return res.status(404).json({ error: 'Producto no encontrado o no disponible' })
+    console.log('[orders.createSingle] prod:', prod.rows[0])
     if (prod.rows[0].seller_id === buyerId)
       return res.status(400).json({ error: 'No puedes comprar tu propio producto' })
 
