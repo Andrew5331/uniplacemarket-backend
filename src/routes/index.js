@@ -46,6 +46,7 @@ router.delete('/cart/items/:productId', auth, cartCtrl.removeItem)
 router.post('/orders',                    auth, ordCtrl.create)
 router.post('/orders/single',             auth, ordCtrl.createSingle)
 router.get('/orders/my',                  auth, ordCtrl.myOrders)
+router.get('/orders/selling',             auth, ordCtrl.mySales)
 router.patch('/orders/:orderId/status',   auth, ordCtrl.changeStatus)
 router.patch('/orders/:orderId',          auth, ordCtrl.updateStatus)
 

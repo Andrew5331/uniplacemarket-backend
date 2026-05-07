@@ -154,6 +154,27 @@ exports.myOrders = async (req, res) => {
   }
 }
 
+// GET /api/orders/selling — órdenes donde el usuario es el vendedor
+exports.mySales = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT o.order_id, o.status, o.created_at, o.price,
+              p.title AS product_title,
+              u.name AS buyer_name
+       FROM orders o
+       JOIN products p ON p.product_id = o.product_id
+       JOIN users u ON u.user_id = o.buyer_id
+       WHERE o.seller_id = $1
+       ORDER BY o.created_at DESC`,
+      [req.user.userId]
+    )
+    return res.status(200).json(result.rows)
+  } catch (err) {
+    console.error('[orders.mySales]', err)
+    return res.status(500).json({ error: 'Error del servidor' })
+  }
+}
+
 // PATCH /api/orders/:orderId — actualizar estado (seller acepta/rechaza)
 exports.updateStatus = async (req, res) => {
   try {
