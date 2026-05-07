@@ -84,7 +84,9 @@ exports.createSingle = async (req, res) => {
     )
     return res.status(201).json(result.rows[0])
   } catch (err) {
-    console.error('[orders.createSingle]', err)
+    console.error('[orders.createSingle] message:', err.message)
+    console.error('[orders.createSingle] stack:', err.stack)
+    console.error('[orders.createSingle] detail:', err.detail)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
