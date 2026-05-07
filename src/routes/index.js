@@ -8,6 +8,7 @@ const prodsCtrl = require('../controllers/products.controller')
 const revCtrl   = require('../controllers/reviews.controller')
 const ordCtrl   = require('../controllers/orders.controller')
 const convCtrl  = require('../controllers/conversations.controller')
+const cartCtrl  = require('../controllers/cart.controller')
 
 // Auth
 router.post('/auth/register', authCtrl.register)
@@ -36,15 +37,23 @@ router.post('/reviews',                    auth, revCtrl.create)
 router.get('/reviews/product/:productId',  auth, revCtrl.getByProduct)
 router.patch('/reviews/:reviewId/helpful', auth, revCtrl.markHelpful)
 
+// Cart
+router.get('/cart',                    auth, cartCtrl.getCart)
+router.post('/cart/items',             auth, cartCtrl.addItem)
+router.delete('/cart/items/:productId', auth, cartCtrl.removeItem)
+
 // Orders
-router.post('/orders',           auth, ordCtrl.create)
-router.get('/orders/my',         auth, ordCtrl.myOrders)
-router.patch('/orders/:orderId', auth, ordCtrl.updateStatus)
+router.post('/orders',                    auth, ordCtrl.create)
+router.post('/orders/single',             auth, ordCtrl.createSingle)
+router.get('/orders/my',                  auth, ordCtrl.myOrders)
+router.patch('/orders/:orderId/status',   auth, ordCtrl.changeStatus)
+router.patch('/orders/:orderId',          auth, ordCtrl.updateStatus)
 
 // Conversations
 router.post('/conversations',                                  auth, convCtrl.create)
 router.get('/conversations',                                   auth, convCtrl.list)
 router.post('/conversations/:conversationId/messages',         auth, convCtrl.sendMessage)
 router.get('/conversations/:conversationId/messages',          auth, convCtrl.getMessages)
+router.delete('/conversations/:conversationId',                auth, convCtrl.deleteConversation)
 
 module.exports = router

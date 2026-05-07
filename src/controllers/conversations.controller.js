@@ -177,3 +177,25 @@ exports.getMessages = async (req, res) => {
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
+
+// DELETE /api/conversations/:conversationId
+exports.deleteConversation = async (req, res) => {
+  try {
+    const { conversationId } = req.params
+    const userId = req.user.userId
+
+    const conv = await pool.query(
+      'SELECT * FROM conversations WHERE conversation_id = $1', [conversationId]
+    )
+    if (!conv.rows.length) return res.status(404).json({ error: 'Conversación no encontrada' })
+    const c = conv.rows[0]
+    if (c.buyer_id !== userId && c.seller_id !== userId)
+      return res.status(403).json({ error: 'No eres participante de esta conversación' })
+
+    await pool.query('DELETE FROM conversations WHERE conversation_id = $1', [conversationId])
+    return res.status(200).json({ message: 'Conversación eliminada' })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: 'Error del servidor' })
+  }
+}
