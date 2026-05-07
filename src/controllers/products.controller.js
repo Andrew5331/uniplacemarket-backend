@@ -51,7 +51,7 @@ exports.create = async (req, res) => {
       createdAt: product.created_at, sellerActivated: true
     })
   } catch (err) {
-    console.error('[products.create]', err.message, '\n', err.stack)
+    console.error('[products.create]', err)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -103,7 +103,7 @@ exports.list = async (req, res) => {
       pagination: { page, limit, total, pages: Math.ceil(total / limit) }
     })
   } catch (err) {
-    console.error('[products.list]', err.message, '\n', err.stack)
+    console.error('[products.list]', err)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -134,7 +134,7 @@ exports.getOne = async (req, res) => {
       seller: { id: p.seller_id, name: p.seller_name, reputation: parseFloat(p.seller_rep), photoUrl: p.seller_photo }
     })
   } catch (err) {
-    console.error('[products.getOne]', err.message, '\n', err.stack)
+    console.error('[products.getOne]', err)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -175,7 +175,7 @@ exports.update = async (req, res) => {
     }
     return res.status(200).json({ productId, updated: true, updatedAt: new Date().toISOString() })
   } catch (err) {
-    console.error('[products.update]', err.message, '\n', err.stack)
+    console.error('[products.update]', err)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -196,7 +196,7 @@ exports.remove = async (req, res) => {
     await pool.query(`UPDATE products SET status = 'deleted' WHERE product_id = $1`, [productId])
     return res.status(200).json({ productId, deleted: true })
   } catch (err) {
-    console.error('[products.remove]', err.message, '\n', err.stack)
+    console.error('[products.remove]', err)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }
@@ -218,7 +218,7 @@ exports.myProducts = async (req, res) => {
       imageUrl: p.image_url ? `http://localhost:4000${p.image_url}` : null
     })))
   } catch (err) {
-    console.error('[products.myProducts]', err.message, '\n', err.stack)
+    console.error('[products.myProducts]', err)
     return res.status(500).json({ error: 'Error del servidor' })
   }
 }

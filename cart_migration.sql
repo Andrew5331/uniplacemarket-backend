@@ -1,14 +1,16 @@
--- Ejecutar en Neon antes del deploy: \i cart_migration.sql
+-- Ejecutar en Neon antes del deploy
+-- DROP garantiza schema correcto aunque la tabla ya existiera con columnas diferentes
 
--- Tabla de carritos (uno por usuario)
-CREATE TABLE IF NOT EXISTS carts (
+DROP TABLE IF EXISTS cart_items;
+DROP TABLE IF EXISTS carts;
+
+CREATE TABLE carts (
   cart_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Tabla de ítems del carrito
-CREATE TABLE IF NOT EXISTS cart_items (
+CREATE TABLE cart_items (
   cart_item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   cart_id      UUID NOT NULL REFERENCES carts(cart_id) ON DELETE CASCADE,
   product_id   UUID NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
