@@ -35,9 +35,16 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'El carrito está vacío' })
     }
 
+    items.rows.forEach(i => {
+      const reasons = []
+      if (i.status !== 'active') reasons.push(`status="${i.status}"`)
+      if (i.seller_id === buyerId) reasons.push('own product')
+      console.log(`[orders.create] item product_id=${i.product_id} seller_id=${i.seller_id} status=${i.status} reasons=[${reasons.join(',')}]`)
+    })
+
     const invalid = items.rows.filter(i => i.status !== 'active' || i.seller_id === buyerId)
     if (invalid.length) {
-      console.log('[orders.create] invalid items:', JSON.stringify(invalid))
+      console.log('[orders.create] invalid items count:', invalid.length)
       await client.query('ROLLBACK')
       return res.status(400).json({ error: 'El carrito contiene productos no disponibles o productos propios' })
     }
