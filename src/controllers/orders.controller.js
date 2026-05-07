@@ -5,16 +5,31 @@ exports.create = async (req, res) => {
   const client = await pool.connect()
   try {
     const buyerId = req.user.userId
+    const { cartId } = req.body
+    console.log('[orders.create] buyerId:', buyerId, 'cartId:', cartId)
+
     await client.query('BEGIN')
 
-    const items = await client.query(
-      `SELECT ci.product_id, p.seller_id, p.status, p.price
-       FROM cart_items ci
-       JOIN carts c ON c.cart_id = ci.cart_id
-       JOIN products p ON p.product_id = ci.product_id
-       WHERE c.user_id = $1`,
-      [buyerId]
-    )
+    let itemsQuery, itemsParams
+    if (cartId) {
+      itemsQuery = `SELECT ci.product_id, p.seller_id, p.status, p.price
+                    FROM cart_items ci
+                    JOIN carts c ON c.cart_id = ci.cart_id
+                    JOIN products p ON p.product_id = ci.product_id
+                    WHERE ci.cart_id = $1 AND c.user_id = $2`
+      itemsParams = [cartId, buyerId]
+    } else {
+      itemsQuery = `SELECT ci.product_id, p.seller_id, p.status, p.price
+                    FROM cart_items ci
+                    JOIN carts c ON c.cart_id = ci.cart_id
+                    JOIN products p ON p.product_id = ci.product_id
+                    WHERE c.user_id = $1`
+      itemsParams = [buyerId]
+    }
+
+    const items = await client.query(itemsQuery, itemsParams)
+    console.log('[orders.create] items found:', items.rows.length, JSON.stringify(items.rows))
+
     if (!items.rows.length) {
       await client.query('ROLLBACK')
       return res.status(400).json({ error: 'El carrito está vacío' })
@@ -22,6 +37,7 @@ exports.create = async (req, res) => {
 
     const invalid = items.rows.filter(i => i.status !== 'active' || i.seller_id === buyerId)
     if (invalid.length) {
+      console.log('[orders.create] invalid items:', JSON.stringify(invalid))
       await client.query('ROLLBACK')
       return res.status(400).json({ error: 'El carrito contiene productos no disponibles o productos propios' })
     }
@@ -32,24 +48,35 @@ exports.create = async (req, res) => {
         `SELECT order_id FROM orders WHERE product_id = $1 AND buyer_id = $2 AND status = 'pending'`,
         [item.product_id, buyerId]
       )
-      if (dup.rows.length) continue
+      if (dup.rows.length) {
+        console.log('[orders.create] dup skip product_id:', item.product_id)
+        continue
+      }
 
       const r = await client.query(
-        `INSERT INTO orders (product_id, buyer_id, seller_id) VALUES ($1,$2,$3) RETURNING *`,
-        [item.product_id, buyerId, item.seller_id]
+        `INSERT INTO orders (product_id, buyer_id, seller_id, price) VALUES ($1,$2,$3,$4) RETURNING *`,
+        [item.product_id, buyerId, item.seller_id, item.price]
       )
       created.push(r.rows[0])
     }
 
-    await client.query(
-      'DELETE FROM cart_items WHERE cart_id = (SELECT cart_id FROM carts WHERE user_id = $1)',
-      [buyerId]
-    )
+    if (cartId) {
+      await client.query('DELETE FROM cart_items WHERE cart_id = $1', [cartId])
+    } else {
+      await client.query(
+        'DELETE FROM cart_items WHERE cart_id = (SELECT cart_id FROM carts WHERE user_id = $1)',
+        [buyerId]
+      )
+    }
+
     await client.query('COMMIT')
+    console.log('[orders.create] created:', created.length)
     return res.status(201).json(created)
   } catch (err) {
     await client.query('ROLLBACK')
-    console.error('[orders.create]', err)
+    console.error('[orders.create] message:', err.message)
+    console.error('[orders.create] stack:', err.stack)
+    console.error('[orders.create] detail:', err.detail)
     return res.status(500).json({ error: 'Error del servidor' })
   } finally {
     client.release()
