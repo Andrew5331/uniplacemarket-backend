@@ -5,19 +5,34 @@ exports.getCart = async (req, res) => {
   try {
     const userId = req.user.userId
     const result = await pool.query(
-      `SELECT ci.cart_item_id, ci.product_id, ci.created_at,
+      `SELECT c.cart_id, ci.cart_item_id, ci.product_id, ci.created_at,
               p.title, p.price, p.status AS product_status,
               u.user_id AS seller_id, u.name AS seller_name,
               (SELECT url FROM product_images WHERE product_id = p.product_id ORDER BY position LIMIT 1) AS image_url
-       FROM cart_items ci
-       JOIN carts c ON c.cart_id = ci.cart_id
-       JOIN products p ON p.product_id = ci.product_id
-       JOIN users u ON u.user_id = p.seller_id
+       FROM carts c
+       LEFT JOIN cart_items ci ON ci.cart_id = c.cart_id
+       LEFT JOIN products p ON p.product_id = ci.product_id
+       LEFT JOIN users u ON u.user_id = p.seller_id
        WHERE c.user_id = $1
        ORDER BY ci.created_at DESC`,
       [userId]
     )
-    return res.status(200).json(result.rows)
+
+    const cartId = result.rows[0]?.cart_id ?? null
+    const items = result.rows
+      .filter(r => r.product_id !== null)
+      .map(r => ({
+        productId:  r.product_id,
+        title:      r.title,
+        price:      parseFloat(r.price),
+        quantity:   1,
+        imageUrl:   r.image_url || null,
+        sellerName: r.seller_name,
+        sellerId:   r.seller_id,
+      }))
+    const subtotal = items.reduce((sum, i) => sum + i.price, 0)
+
+    return res.status(200).json({ cartId, items, subtotal })
   } catch (err) {
     console.error('[cart.getCart]', err)
     return res.status(500).json({ error: 'Error del servidor' })
