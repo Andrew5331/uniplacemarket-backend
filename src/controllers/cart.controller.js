@@ -5,7 +5,7 @@ exports.getCart = async (req, res) => {
   try {
     const userId = req.user.userId
     const result = await pool.query(
-      `SELECT ci.cart_item_id, ci.product_id, ci.added_at,
+      `SELECT ci.cart_item_id, ci.product_id, ci.created_at,
               p.title, p.price, p.status AS product_status,
               u.user_id AS seller_id, u.name AS seller_name,
               (SELECT url FROM product_images WHERE product_id = p.product_id ORDER BY position LIMIT 1) AS image_url
@@ -14,7 +14,7 @@ exports.getCart = async (req, res) => {
        JOIN products p ON p.product_id = ci.product_id
        JOIN users u ON u.user_id = p.seller_id
        WHERE c.user_id = $1
-       ORDER BY ci.added_at DESC`,
+       ORDER BY ci.created_at DESC`,
       [userId]
     )
     return res.status(200).json(result.rows)

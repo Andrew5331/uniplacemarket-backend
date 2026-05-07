@@ -8,7 +8,7 @@ exports.create = async (req, res) => {
     await client.query('BEGIN')
 
     const items = await client.query(
-      `SELECT ci.product_id, p.seller_id, p.status
+      `SELECT ci.product_id, p.seller_id, p.status, p.price
        FROM cart_items ci
        JOIN carts c ON c.cart_id = ci.cart_id
        JOIN products p ON p.product_id = ci.product_id
@@ -35,8 +35,8 @@ exports.create = async (req, res) => {
       if (dup.rows.length) continue
 
       const r = await client.query(
-        `INSERT INTO orders (product_id, buyer_id, seller_id) VALUES ($1,$2,$3) RETURNING *`,
-        [item.product_id, buyerId, item.seller_id]
+        `INSERT INTO orders (product_id, buyer_id, seller_id, price) VALUES ($1,$2,$3,$4) RETURNING *`,
+        [item.product_id, buyerId, item.seller_id, item.price]
       )
       created.push(r.rows[0])
     }
@@ -78,8 +78,8 @@ exports.createSingle = async (req, res) => {
       return res.status(400).json({ error: 'Ya tienes una solicitud activa para este producto' })
 
     const result = await pool.query(
-      `INSERT INTO orders (product_id, buyer_id, seller_id) VALUES ($1,$2,$3) RETURNING *`,
-      [productId, buyerId, prod.rows[0].seller_id]
+      `INSERT INTO orders (product_id, buyer_id, seller_id, price) VALUES ($1,$2,$3,$4) RETURNING *`,
+      [productId, buyerId, prod.rows[0].seller_id, prod.rows[0].price]
     )
     return res.status(201).json(result.rows[0])
   } catch (err) {
