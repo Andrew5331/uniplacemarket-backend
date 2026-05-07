@@ -10,8 +10,9 @@ exports.create = async (req, res) => {
     const items = await client.query(
       `SELECT ci.product_id, p.seller_id, p.status
        FROM cart_items ci
+       JOIN carts c ON c.cart_id = ci.cart_id
        JOIN products p ON p.product_id = ci.product_id
-       WHERE ci.user_id = $1`,
+       WHERE c.user_id = $1`,
       [buyerId]
     )
     if (!items.rows.length) {
@@ -40,7 +41,10 @@ exports.create = async (req, res) => {
       created.push(r.rows[0])
     }
 
-    await client.query('DELETE FROM cart_items WHERE user_id = $1', [buyerId])
+    await client.query(
+      'DELETE FROM cart_items WHERE cart_id = (SELECT cart_id FROM carts WHERE user_id = $1)',
+      [buyerId]
+    )
     await client.query('COMMIT')
     return res.status(201).json(created)
   } catch (err) {
