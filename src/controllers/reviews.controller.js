@@ -23,6 +23,17 @@ exports.create = async (req, res) => {
     if (sellerId === buyerId)
       return res.status(400).json({ error: 'No puedes reseñar tu propio producto' })
 
+    // Verificar que el buyer haya comprado el producto
+    const purchased = await pool.query(
+      `SELECT order_id FROM orders
+       WHERE product_id = $1 AND buyer_id = $2
+         AND status IN ('confirmed','delivered','completed')
+       LIMIT 1`,
+      [productId, buyerId]
+    )
+    if (!purchased.rows.length)
+      return res.status(403).json({ error: 'Solo puedes reseñar productos que hayas comprado' })
+
     // Una sola reseña por producto por usuario (unique index en migrate.sql)
     const exists = await pool.query(
       'SELECT review_id FROM reviews WHERE product_id = $1 AND buyer_id = $2',

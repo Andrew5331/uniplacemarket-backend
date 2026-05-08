@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS products (
   description VARCHAR(1000) NOT NULL,
   price       NUMERIC(12,2) NOT NULL CHECK (price > 0),
   condition   VARCHAR(10) NOT NULL CHECK (condition IN ('new', 'used')),
+  stock       INTEGER NOT NULL DEFAULT 1,
   status      VARCHAR(20) NOT NULL DEFAULT 'active'
                 CHECK (status IN ('active', 'sold', 'deleted')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -17,7 +17,7 @@ async function activateSellerRole(userId) {
 // POST /api/products
 exports.create = async (req, res) => {
   try {
-    const { title, description, price, categoryId, condition } = req.body
+    const { title, description, price, categoryId, condition, stock } = req.body
     const sellerId = req.user.userId
     const details = []
 
@@ -32,9 +32,9 @@ exports.create = async (req, res) => {
 
     // Insertar producto
     const prod = await pool.query(
-      `INSERT INTO products (seller_id, category_id, title, description, price, condition)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [sellerId, categoryId, title.trim(), description.trim(), price, condition]
+      `INSERT INTO products (seller_id, category_id, title, description, price, condition, stock)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [sellerId, categoryId, title.trim(), description.trim(), price, condition, stock != null ? parseInt(stock) : 1]
     )
     const product = prod.rows[0]
 
@@ -57,7 +57,7 @@ exports.create = async (req, res) => {
 
     return res.status(201).json({
       productId: product.product_id, title: product.title,
-      sellerId, status: product.status,
+      sellerId, status: product.status, stock: product.stock,
       createdAt: product.created_at, sellerActivated: true
     })
   } catch (err) {
@@ -92,7 +92,7 @@ exports.list = async (req, res) => {
 
     values.push(limit); values.push(offset)
     const result = await pool.query(
-      `SELECT p.product_id, p.title, p.description, p.price, p.condition, p.status,
+      `SELECT p.product_id, p.title, p.description, p.price, p.condition, p.status, p.stock,
               p.created_at, c.name AS category, u.name AS seller_name, u.user_id AS seller_id,
               (SELECT url FROM product_images WHERE product_id = p.product_id ORDER BY position LIMIT 1) AS image_url
        FROM products p
@@ -108,7 +108,7 @@ exports.list = async (req, res) => {
       data: result.rows.map(p => ({
         productId: p.product_id, title: p.title, description: p.description,
         price: parseFloat(p.price), condition: p.condition, category: p.category,
-        imageUrl: resolveImageUrl(p.image_url),
+        stock: p.stock, imageUrl: resolveImageUrl(p.image_url),
         sellerName: p.seller_name, sellerId: p.seller_id, createdAt: p.created_at
       })),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) }
@@ -140,7 +140,7 @@ exports.getOne = async (req, res) => {
     return res.status(200).json({
       productId: p.product_id, title: p.title, description: p.description,
       price: parseFloat(p.price), condition: p.condition, status: p.status,
-      category: p.category, createdAt: p.created_at,
+      stock: p.stock, category: p.category, createdAt: p.created_at,
       images: imgs.rows.map(i => resolveImageUrl(i.url)),
       seller: { id: p.seller_id, name: p.seller_name, reputation: parseFloat(p.seller_rep), photoUrl: p.seller_photo }
     })
@@ -164,13 +164,14 @@ exports.update = async (req, res) => {
     )
     if (activeOrder.rows.length) return res.status(409).json({ error: 'No se puede editar un producto con órdenes activas' })
 
-    const { title, description, price, categoryId, condition } = req.body
+    const { title, description, price, categoryId, condition, stock } = req.body
     const fields = []; const values = []; let idx = 1
     if (title)       { fields.push(`title = $${idx++}`);       values.push(title.trim()) }
     if (description) { fields.push(`description = $${idx++}`); values.push(description.trim()) }
     if (price)       { fields.push(`price = $${idx++}`);       values.push(price) }
     if (categoryId)  { fields.push(`category_id = $${idx++}`); values.push(categoryId) }
     if (condition)   { fields.push(`condition = $${idx++}`);   values.push(condition) }
+    if (stock != null) { fields.push(`stock = $${idx++}`);     values.push(parseInt(stock)) }
 
     values.push(productId)
     await pool.query(`UPDATE products SET ${fields.join(', ')} WHERE product_id = $${idx}`, values)
