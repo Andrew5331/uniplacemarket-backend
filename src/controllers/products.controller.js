@@ -221,7 +221,7 @@ exports.remove = async (req, res) => {
 exports.myProducts = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT p.product_id, p.title, p.price, p.condition, p.status, p.created_at,
+      `SELECT p.product_id, p.title, p.price, p.condition, p.status, p.stock, p.created_at,
               (SELECT url FROM product_images WHERE product_id = p.product_id ORDER BY position LIMIT 1) AS image_url
        FROM products p
        WHERE p.seller_id = $1 AND p.status != 'deleted'
@@ -230,7 +230,7 @@ exports.myProducts = async (req, res) => {
     )
     return res.status(200).json(result.rows.map(p => ({
       productId: p.product_id, title: p.title, price: parseFloat(p.price),
-      condition: p.condition, status: p.status, createdAt: p.created_at,
+      condition: p.condition, status: p.status, stock: p.stock, createdAt: p.created_at,
       imageUrl: resolveImageUrl(p.image_url)
     })))
   } catch (err) {

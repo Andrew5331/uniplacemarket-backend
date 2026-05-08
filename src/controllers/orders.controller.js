@@ -65,6 +65,9 @@ exports.create = async (req, res) => {
         [item.product_id, buyerId, item.seller_id, item.price]
       )
       created.push(r.rows[0])
+
+      await client.query('UPDATE products SET stock = stock - 1 WHERE product_id = $1', [item.product_id])
+      await client.query("UPDATE products SET status = 'sold' WHERE product_id = $1 AND stock <= 0", [item.product_id])
     }
 
     if (cartId) {
@@ -116,6 +119,10 @@ exports.createSingle = async (req, res) => {
       `INSERT INTO orders (product_id, buyer_id, seller_id) VALUES ($1,$2,$3) RETURNING *`,
       [productId, buyerId, prod.rows[0].seller_id]
     )
+
+    await pool.query('UPDATE products SET stock = stock - 1 WHERE product_id = $1', [productId])
+    await pool.query("UPDATE products SET status = 'sold' WHERE product_id = $1 AND stock <= 0", [productId])
+
     return res.status(201).json(result.rows[0])
   } catch (err) {
     console.error('[orders.createSingle] message:', err.message)
