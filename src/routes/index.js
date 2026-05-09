@@ -2,14 +2,16 @@ const router = require('express').Router()
 const auth = require('../middleware/auth')
 const upload = require('../middleware/upload')
 
-const authCtrl  = require('../controllers/auth.controller')
-const usersCtrl = require('../controllers/users.controller')
-const prodsCtrl = require('../controllers/products.controller')
-const revCtrl   = require('../controllers/reviews.controller')
-const ordCtrl   = require('../controllers/orders.controller')
-const convCtrl  = require('../controllers/conversations.controller')
-const cartCtrl  = require('../controllers/cart.controller')
-const notifCtrl = require('../controllers/notifications.controller')
+const authCtrl   = require('../controllers/auth.controller')
+const usersCtrl  = require('../controllers/users.controller')
+const prodsCtrl  = require('../controllers/products.controller')
+const revCtrl    = require('../controllers/reviews.controller')
+const ordCtrl    = require('../controllers/orders.controller')
+const convCtrl   = require('../controllers/conversations.controller')
+const cartCtrl   = require('../controllers/cart.controller')
+const notifCtrl  = require('../controllers/notifications.controller')
+const adminRoutes  = require('./admin.routes')
+const reportsCtrl  = require('../controllers/reports.controller')
 
 // Auth
 router.post('/auth/register', authCtrl.register)
@@ -62,5 +64,11 @@ router.get('/conversations',                                   auth, convCtrl.li
 router.post('/conversations/:conversationId/messages',         auth, convCtrl.sendMessage)
 router.get('/conversations/:conversationId/messages',          auth, convCtrl.getMessages)
 router.delete('/conversations/:conversationId',                auth, convCtrl.deleteConversation)
+
+// Reports
+router.post('/reports', auth, reportsCtrl.create)
+
+// Admin
+router.use('/admin', adminRoutes)
 
 module.exports = router

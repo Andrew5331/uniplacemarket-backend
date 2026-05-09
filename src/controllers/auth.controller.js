@@ -41,6 +41,9 @@ exports.register = async (req, res) => {
   }
 }
 
+const ADMIN_EMAIL_SUFFIX = '@admin.unisabana.edu.co'
+const ADMIN_SECRET_KEY   = 'USabana2025Admin'
+
 // POST /api/auth/login
 exports.login = async (req, res) => {
   try {
@@ -56,14 +59,22 @@ exports.login = async (req, res) => {
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) return res.status(401).json({ error: 'Credenciales incorrectas' })
 
+    if (user.is_suspended) {
+      return res.status(403).json({ error: 'Tu cuenta ha sido suspendida. Contacta al administrador.' })
+    }
+
+    const isAdminEmail = user.email.endsWith(ADMIN_EMAIL_SUFFIX)
+    const hasAdminKey  = req.headers['x-admin-key'] === ADMIN_SECRET_KEY
+    const role = (isAdminEmail || hasAdminKey) ? 'admin' : (user.role || 'user')
+
     const token = jwt.sign(
-      { userId: user.user_id, email: user.email, isSeller: user.is_seller },
+      { userId: user.user_id, email: user.email, isSeller: user.is_seller, role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     )
     return res.status(200).json({
       token,
-      user: { userId: user.user_id, name: user.name, email: user.email, career: user.career, photoUrl: user.photo_url, isSeller: user.is_seller, reputation: parseFloat(user.reputation) }
+      user: { userId: user.user_id, name: user.name, email: user.email, career: user.career, photoUrl: user.photo_url, isSeller: user.is_seller, reputation: parseFloat(user.reputation), role }
     })
   } catch (err) {
     console.error(err)
