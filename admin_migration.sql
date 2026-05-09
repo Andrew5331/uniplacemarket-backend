@@ -26,3 +26,9 @@ CREATE TABLE IF NOT EXISTS admin_logs (
 -- Agregar columnas a users si no existen
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_evidence TEXT;
+
+-- Agregar columna evidence a admin_logs si no existe
+ALTER TABLE admin_logs ADD COLUMN IF NOT EXISTS evidence TEXT;

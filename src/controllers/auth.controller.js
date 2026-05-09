@@ -67,7 +67,20 @@ exports.login = async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Credenciales incorrectas' })
 
     if (user.is_suspended) {
-      return res.status(403).json({ error: 'Tu cuenta ha sido suspendida. Contacta al administrador.' })
+      const until = user.suspended_until ? new Date(user.suspended_until) : null
+      if (until && until < new Date()) {
+        await pool.query(
+          'UPDATE users SET is_suspended = false, suspended_until = NULL WHERE user_id = $1',
+          [user.user_id]
+        )
+      } else {
+        return res.status(403).json({
+          error: 'Tu cuenta está suspendida',
+          reason: user.suspension_reason || null,
+          evidence: user.suspension_evidence || null,
+          suspendedUntil: until ? until.toISOString() : null,
+        })
+      }
     }
 
     const isAdminEmail = user.email.endsWith(ADMIN_EMAIL_SUFFIX)

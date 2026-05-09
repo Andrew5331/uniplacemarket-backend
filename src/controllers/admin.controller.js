@@ -1,10 +1,10 @@
 const pool = require('../config/db')
 
-async function insertLog(adminId, action, targetId, targetType, reason = null) {
+async function insertLog(adminId, action, targetId, targetType, reason = null, evidence = null) {
   const res = await pool.query(
-    `INSERT INTO admin_logs (admin_id, action, target_id, target_type, reason)
-     VALUES ($1,$2,$3,$4,$5) RETURNING log_id`,
-    [adminId, action, targetId, targetType, reason]
+    `INSERT INTO admin_logs (admin_id, action, target_id, target_type, reason, evidence)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING log_id`,
+    [adminId, action, targetId, targetType, reason, evidence]
   )
   return res.rows[0].log_id
 }
@@ -52,19 +52,38 @@ exports.deleteProduct = async (req, res) => {
 exports.suspendUser = async (req, res) => {
   try {
     const { userId } = req.params
-    const { suspended } = req.body
-    if (typeof suspended !== 'boolean') {
-      return res.status(400).json({ error: 'El campo suspended debe ser booleano' })
+    const { action, reason, evidence, duration, durationUnit } = req.body
+
+    if (!['suspend', 'delete'].includes(action)) {
+      return res.status(400).json({ error: "action debe ser 'suspend' o 'delete'" })
     }
 
-    const user = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [userId])
-    if (!user.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' })
+    const userRes = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [userId])
+    if (!userRes.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' })
 
-    await pool.query('UPDATE users SET is_suspended = $1 WHERE user_id = $2', [suspended, userId])
-    const action = suspended ? 'suspend_user' : 'unsuspend_user'
-    const actionLogId = await insertLog(req.user.userId, action, userId, 'user')
+    if (action === 'delete') {
+      const actionLogId = await insertLog(req.user.userId, 'delete_user', userId, 'user', reason, evidence)
+      await pool.query('DELETE FROM users WHERE user_id = $1', [userId])
+      return res.status(200).json({ userId, action: 'delete', actionLogId })
+    }
 
-    return res.status(200).json({ userId, suspended, actionLogId })
+    // action === 'suspend'
+    let suspendedUntil = null
+    if (duration && durationUnit) {
+      const ms = { minutes: 60_000, hours: 3_600_000, days: 86_400_000 }[durationUnit]
+      if (!ms) return res.status(400).json({ error: "durationUnit debe ser 'minutes', 'hours' o 'days'" })
+      suspendedUntil = new Date(Date.now() + Number(duration) * ms)
+    }
+
+    await pool.query(
+      `UPDATE users
+       SET is_suspended = true, suspended_until = $1, suspension_reason = $2, suspension_evidence = $3
+       WHERE user_id = $4`,
+      [suspendedUntil, reason || null, evidence || null, userId]
+    )
+    const actionLogId = await insertLog(req.user.userId, 'suspend_user', userId, 'user', reason, evidence)
+
+    return res.status(200).json({ userId, action: 'suspend', suspendedUntil, actionLogId })
   } catch (err) {
     console.error('[admin.suspendUser]', err)
     return res.status(500).json({ error: 'Error del servidor' })
