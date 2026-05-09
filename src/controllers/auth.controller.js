@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const pool = require('../config/db')
 
-const EMAIL_REGEX = /^[^\s@]+@unisabana\.edu\.co$/
+const EMAIL_REGEX = /^[^\s@]+@(admin\.)?unisabana\.edu\.co$/
 const PASS_REGEX = /^(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
 
 // POST /api/auth/register
@@ -29,12 +29,19 @@ exports.register = async (req, res) => {
       [name.trim(), email.toLowerCase(), hash]
     )
     const user = result.rows[0]
+
+    const isAdminEmail = user.email.endsWith(ADMIN_EMAIL_SUFFIX)
+    if (isAdminEmail) {
+      await pool.query("UPDATE users SET role = 'admin' WHERE user_id = $1", [user.user_id])
+    }
+    const role = isAdminEmail ? 'admin' : 'user'
+
     const token = jwt.sign(
-      { userId: user.user_id, email: user.email, isSeller: user.is_seller },
+      { userId: user.user_id, email: user.email, isSeller: user.is_seller, role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     )
-    return res.status(201).json({ token, user: { userId: user.user_id, name: user.name, email: user.email, isSeller: user.is_seller, reputation: user.reputation } })
+    return res.status(201).json({ token, user: { userId: user.user_id, name: user.name, email: user.email, isSeller: user.is_seller, reputation: user.reputation, role } })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ error: 'Error del servidor' })
