@@ -9,6 +9,7 @@ const revCtrl   = require('../controllers/reviews.controller')
 const ordCtrl   = require('../controllers/orders.controller')
 const convCtrl  = require('../controllers/conversations.controller')
 const cartCtrl  = require('../controllers/cart.controller')
+const notifCtrl = require('../controllers/notifications.controller')
 
 // Auth
 router.post('/auth/register', authCtrl.register)
@@ -49,6 +50,11 @@ router.get('/orders/my',                  auth, ordCtrl.myOrders)
 router.get('/orders/selling',             auth, ordCtrl.mySales)
 router.patch('/orders/:orderId/status',   auth, ordCtrl.changeStatus)
 router.patch('/orders/:orderId',          auth, ordCtrl.updateStatus)
+
+// Notifications
+router.get('/notifications',                              auth, notifCtrl.getNotifications)
+router.patch('/notifications/read-all',                   auth, notifCtrl.markAllRead)
+router.patch('/notifications/:notificationId/read',       auth, notifCtrl.markRead)
 
 // Conversations
 router.post('/conversations',                                  auth, convCtrl.create)

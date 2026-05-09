@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { createNotification } = require('../helpers/notify')
 
 // POST /api/conversations — iniciar o recuperar conversación
 exports.create = async (req, res) => {
@@ -134,6 +135,9 @@ exports.sendMessage = async (req, res) => {
         createdAt: msg.created_at
       })
     }
+
+    const recipientId = c.buyer_id === senderId ? c.seller_id : c.buyer_id
+    createNotification({ userId: recipientId, type: 'new_message', message: 'Tienes un nuevo mensaje', resourceId: conversationId, resourceType: 'conversation' })
 
     return res.status(201).json({
       messageId: msg.message_id,

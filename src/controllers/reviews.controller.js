@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { createNotification } = require('../helpers/notify')
 
 // POST /api/reviews — reseña directa por producto (sin requerir orden)
 exports.create = async (req, res) => {
@@ -48,6 +49,7 @@ exports.create = async (req, res) => {
       [productId, buyerId, sellerId, Number(rating), comment || null]
     )
     const rev = result.rows[0]
+    createNotification({ userId: sellerId, type: 'new_review', message: `Recibiste una nueva reseña de ${Number(rating)} estrellas`, resourceId: productId, resourceType: 'product' })
     return res.status(201).json({
       reviewId: rev.review_id, sellerId: rev.seller_id,
       rating: rev.rating, comment: rev.comment, createdAt: rev.created_at

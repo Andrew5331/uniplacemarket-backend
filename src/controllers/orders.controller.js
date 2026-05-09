@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { createNotification } = require('../helpers/notify')
 
 // POST /api/orders — crear órdenes desde carrito
 exports.create = async (req, res) => {
@@ -68,6 +69,7 @@ exports.create = async (req, res) => {
 
       await client.query('UPDATE products SET stock = stock - 1 WHERE product_id = $1', [item.product_id])
       await client.query("UPDATE products SET status = 'sold' WHERE product_id = $1 AND stock <= 0", [item.product_id])
+      createNotification({ userId: item.seller_id, type: 'purchase', message: 'Tienes una nueva solicitud de compra para tu producto', resourceId: r.rows[0].order_id, resourceType: 'order' })
     }
 
     if (cartId) {
@@ -122,6 +124,7 @@ exports.createSingle = async (req, res) => {
 
     await pool.query('UPDATE products SET stock = stock - 1 WHERE product_id = $1', [productId])
     await pool.query("UPDATE products SET status = 'sold' WHERE product_id = $1 AND stock <= 0", [productId])
+    createNotification({ userId: prod.rows[0].seller_id, type: 'purchase', message: 'Tienes una nueva solicitud de compra para tu producto', resourceId: result.rows[0].order_id, resourceType: 'order' })
 
     return res.status(201).json(result.rows[0])
   } catch (err) {
@@ -234,6 +237,7 @@ exports.changeStatus = async (req, res) => {
     const result = await pool.query(
       `UPDATE orders SET status = $1 WHERE order_id = $2 RETURNING *`, [status, orderId]
     )
+    createNotification({ userId: o.buyer_id, type: 'order_status', message: `Tu orden ha sido actualizada a: ${status}`, resourceId: orderId, resourceType: 'order' })
     return res.status(200).json(result.rows[0])
   } catch (err) {
     console.error('[orders.changeStatus]', err)
