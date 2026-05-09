@@ -111,12 +111,12 @@ exports.logout = (req, res) => {
 exports.me = async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT user_id, name, email, career, photo_url, is_seller, reputation FROM users WHERE user_id = $1',
+      'SELECT user_id, name, email, career, photo_url, is_seller, reputation, role FROM users WHERE user_id = $1',
       [req.user.userId]
     )
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' })
     const u = result.rows[0]
-    return res.status(200).json({ userId: u.user_id, name: u.name, email: u.email, career: u.career, photoUrl: u.photo_url, isSeller: u.is_seller, reputation: parseFloat(u.reputation) })
+    return res.status(200).json({ userId: u.user_id, name: u.name, email: u.email, career: u.career, photoUrl: u.photo_url, isSeller: u.is_seller, reputation: parseFloat(u.reputation), role: u.role })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ error: 'Error del servidor' })
