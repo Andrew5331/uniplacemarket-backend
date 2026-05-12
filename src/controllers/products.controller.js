@@ -204,11 +204,6 @@ exports.remove = async (req, res) => {
     if (!prod.rows.length) return res.status(404).json({ error: 'Producto no encontrado' })
     if (prod.rows[0].seller_id !== req.user.userId) return res.status(403).json({ error: 'No tienes permiso para modificar este producto' })
 
-    const activeOrder = await pool.query(
-      `SELECT order_id FROM orders WHERE product_id = $1 AND status IN ('confirmed','delivered')`, [productId]
-    )
-    if (activeOrder.rows.length) return res.status(409).json({ error: 'No se puede eliminar un producto con órdenes activas' })
-
     await pool.query(`UPDATE products SET status = 'deleted' WHERE product_id = $1`, [productId])
     return res.status(200).json({ productId, deleted: true })
   } catch (err) {
