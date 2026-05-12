@@ -13,14 +13,14 @@ exports.create = async (req, res) => {
 
     let itemsQuery, itemsParams
     if (cartId) {
-      itemsQuery = `SELECT ci.product_id, p.seller_id, p.status, p.price
+      itemsQuery = `SELECT ci.product_id, ci.quantity, p.seller_id, p.status, p.price
                     FROM cart_items ci
                     JOIN carts c ON c.cart_id = ci.cart_id
                     JOIN products p ON p.product_id = ci.product_id
                     WHERE ci.cart_id = $1 AND c.user_id = $2`
       itemsParams = [cartId, buyerId]
     } else {
-      itemsQuery = `SELECT ci.product_id, p.seller_id, p.status, p.price
+      itemsQuery = `SELECT ci.product_id, ci.quantity, p.seller_id, p.status, p.price
                     FROM cart_items ci
                     JOIN carts c ON c.cart_id = ci.cart_id
                     JOIN products p ON p.product_id = ci.product_id
@@ -67,7 +67,7 @@ exports.create = async (req, res) => {
       )
       created.push(r.rows[0])
 
-      await client.query('UPDATE products SET stock = stock - 1 WHERE product_id = $1', [item.product_id])
+      await client.query('UPDATE products SET stock = stock - $1 WHERE product_id = $2', [item.quantity, item.product_id])
       await client.query("UPDATE products SET status = 'sold' WHERE product_id = $1 AND stock <= 0", [item.product_id])
       createNotification({ userId: item.seller_id, type: 'purchase', message: 'Tienes una nueva solicitud de compra para tu producto', resourceId: r.rows[0].order_id, resourceType: 'order' })
     }
@@ -99,6 +99,7 @@ exports.create = async (req, res) => {
 exports.createSingle = async (req, res) => {
   try {
     const { productId } = req.body
+    const quantity = parseInt(req.body.quantity) || 1
     const buyerId = req.user.userId
     if (!productId) return res.status(400).json({ error: 'productId es obligatorio' })
 
@@ -122,7 +123,7 @@ exports.createSingle = async (req, res) => {
       [productId, buyerId, prod.rows[0].seller_id]
     )
 
-    await pool.query('UPDATE products SET stock = stock - 1 WHERE product_id = $1', [productId])
+    await pool.query('UPDATE products SET stock = stock - $1 WHERE product_id = $2', [quantity, productId])
     await pool.query("UPDATE products SET status = 'sold' WHERE product_id = $1 AND stock <= 0", [productId])
     createNotification({ userId: prod.rows[0].seller_id, type: 'purchase', message: 'Tienes una nueva solicitud de compra para tu producto', resourceId: result.rows[0].order_id, resourceType: 'order' })
 
