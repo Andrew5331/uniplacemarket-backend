@@ -149,6 +149,7 @@ exports.myOrders = async (req, res) => {
 
     const result = await pool.query(
       `SELECT o.order_id, o.status, o.created_at, p.title AS product_title, p.price,
+              1 AS quantity,
               u.name AS seller_name,
               (SELECT url FROM product_images WHERE product_id = p.product_id ORDER BY position LIMIT 1) AS image_url
        FROM orders o
