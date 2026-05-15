@@ -139,6 +139,29 @@ exports.listUsers = async (req, res) => {
   }
 }
 
+// GET /api/admin/products
+exports.listProducts = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.product_id, p.title, p.price, p.status, p.stock, p.created_at,
+              u.name AS seller_name,
+              (SELECT url FROM product_images WHERE product_id = p.product_id ORDER BY position LIMIT 1) AS image_url
+       FROM products p
+       JOIN users u ON u.user_id = p.seller_id
+       WHERE p.status != 'deleted'
+       ORDER BY p.created_at DESC`
+    )
+    return res.status(200).json(result.rows.map(p => ({
+      productId: p.product_id, title: p.title, price: parseFloat(p.price),
+      status: p.status, stock: p.stock, sellerName: p.seller_name,
+      imageUrl: p.image_url, createdAt: p.created_at
+    })))
+  } catch (err) {
+    console.error('[admin.listProducts]', err)
+    return res.status(500).json({ error: 'Error del servidor' })
+  }
+}
+
 // GET /api/admin/reports
 exports.listReports = async (req, res) => {
   try {
