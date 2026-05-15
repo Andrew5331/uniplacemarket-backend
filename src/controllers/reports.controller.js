@@ -19,6 +19,20 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'Datos inválidos', details: ['description no puede superar 500 caracteres'] })
     }
 
+    if (targetType === 'product') {
+      const { rows } = await pool.query(
+        `SELECT product_id FROM products WHERE product_id = $1 AND status != 'deleted'`,
+        [targetId]
+      )
+      if (rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' })
+    } else if (targetType === 'user') {
+      const { rows } = await pool.query(
+        `SELECT user_id FROM users WHERE user_id = $1`,
+        [targetId]
+      )
+      if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' })
+    }
+
     const result = await pool.query(
       `INSERT INTO reports (reporter_id, target_id, target_type, reason, description)
        VALUES ($1,$2,$3,$4,$5) RETURNING report_id, created_at`,
