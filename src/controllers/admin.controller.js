@@ -90,6 +90,22 @@ exports.suspendUser = async (req, res) => {
   }
 }
 
+// DELETE /api/admin/users/:userId
+exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { reason, evidence } = req.body
+    const userRes = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [userId])
+    if (!userRes.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' })
+    const actionLogId = await insertLog(req.user.userId, 'delete_user', userId, 'user', reason, evidence)
+    await pool.query('DELETE FROM users WHERE user_id = $1', [userId])
+    return res.status(200).json({ userId, deleted: true, actionLogId })
+  } catch (err) {
+    console.error('[admin.deleteUser]', err)
+    return res.status(500).json({ error: 'Error del servidor' })
+  }
+}
+
 // GET /api/admin/users
 exports.listUsers = async (req, res) => {
   try {
