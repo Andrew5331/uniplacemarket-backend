@@ -119,7 +119,7 @@ exports.deleteUser = async (req, res) => {
 exports.listUsers = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.user_id, u.name, u.email, u.is_seller, u.is_suspended, u.created_at,
+      `SELECT u.user_id, u.name, u.email, u.role, u.is_seller, u.is_suspended, u.created_at,
               (SELECT COUNT(*) FROM products p WHERE p.seller_id = u.user_id AND p.status != 'deleted') AS total_products
        FROM users u
        ORDER BY u.created_at DESC`
@@ -128,6 +128,7 @@ exports.listUsers = async (req, res) => {
       userId: u.user_id,
       name: u.name,
       email: u.email,
+      role: u.role,
       isSeller: u.is_seller,
       isSuspended: u.is_suspended,
       createdAt: u.created_at,
